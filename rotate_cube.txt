@@ -1,0 +1,118 @@
+#include <GL/glut.h>
+#include <math.h>
+
+GLfloat d = 0;  // Angle of rotation
+int axis = 1;   // Axis for rotation: 1 = X, 2 = Y, 3 = Z
+
+// Initialization function
+void MyInit() {
+    glClearColor(1, 1, 1, 1);   // Set white background
+    glEnable(GL_DEPTH_TEST);    // Enable depth testing for 3D effect
+}
+
+// Function to increment the rotation angle
+void Spin() {
+    d = d + 0.2;                // Increment rotation angle
+    if (d > 360) d = 0;         // Reset if angle exceeds 360
+    glutPostRedisplay();        // Request a redraw
+}
+
+// Function to draw a face of the cube
+void Face(GLfloat A[], GLfloat B[], GLfloat C[], GLfloat D[]) {
+    glBegin(GL_POLYGON);
+    glVertex3fv(A);
+    glVertex3fv(B);
+    glVertex3fv(C);
+    glVertex3fv(D);
+    glEnd();
+}
+
+// Function to draw the cube
+void Cube(GLfloat V0[], GLfloat V1[], GLfloat V2[], GLfloat V3[],
+          GLfloat V4[], GLfloat V5[], GLfloat V6[], GLfloat V7[]) {
+    glColor3f(1, 0, 0);
+    Face(V0, V1, V2, V3); // Front Face
+    glColor3f(0, 1, 0);
+    Face(V4, V5, V6, V7); // Back Face
+    glColor3f(0, 0, 1);
+    Face(V0, V4, V7, V3); // Left Face
+    glColor3f(1, 1, 0);
+    Face(V1, V5, V6, V2); // Right Face
+    glColor3f(1, 0, 1);
+    Face(V2, V3, V7, V6); // Bottom Face
+    glColor3f(0, 1, 1);
+    Face(V0, V1, V5, V4); // Top Face
+}
+
+// Function to draw the rotating cube
+void Draw() {
+    GLfloat V[8][3] = {
+        {-0.5, 0.5, 0.5},  // V0
+        {0.5, 0.5, 0.5},   // V1
+        {0.5, -0.5, 0.5},  // V2
+        {-0.5, -0.5, 0.5}, // V3
+        {-0.5, 0.5, -0.5}, // V4
+        {0.5, 0.5, -0.5},  // V5
+        {0.5, -0.5, -0.5}, // V6
+        {-0.5, -0.5, -0.5} // V7
+    };
+
+    GLfloat IV[8][3];          // Rotated vertices
+    int i;
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear buffers
+    GLfloat r = d * 3.14 / 180; // Convert degrees to radians
+
+    // Apply rotation based on the selected axis
+    if (axis == 1) {           // Rotation about X-axis
+        for (i = 0; i < 8; i++) {
+            IV[i][1] = V[i][1] * cos(r) - V[i][2] * sin(r);
+            IV[i][2] = V[i][2] * cos(r) + V[i][1] * sin(r);
+            IV[i][0] = V[i][0];
+        }
+    }
+    if (axis == 2) {           // Rotation about Y-axis
+        for (i = 0; i < 8; i++) {
+            IV[i][2] = V[i][2] * cos(r) - V[i][0] * sin(r);
+            IV[i][1] = V[i][1];
+            IV[i][0] = V[i][2] * sin(r) + V[i][0] * cos(r);
+        }
+    }
+    if (axis == 3) {           // Rotation about Z-axis
+        for (i = 0; i < 8; i++) {
+            IV[i][0] = V[i][0] * cos(r) - V[i][1] * sin(r);
+            IV[i][1] = V[i][0] * sin(r) + V[i][1] * cos(r);
+            IV[i][2] = V[i][2];
+        }
+    }
+
+    Cube(IV[0], IV[1], IV[2], IV[3], IV[4], IV[5], IV[6], IV[7]); // Draw cube
+    glutSwapBuffers(); // Swap buffers for smooth animation
+}
+
+// Menu callback function
+void menu(int option) {
+    axis = option;             // Update the rotation axis based on menu selection
+}
+
+// Main function
+int main(int argc, char* argv[]) {
+    glutInit(&argc, argv);
+    glutInitWindowSize(600, 600);                        // Set window size
+    glutInitWindowPosition(50, 150);                     // Set window position
+    glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH); // RGB, double buffer, depth buffer
+    glutCreateWindow("CUBE SPIN");                       // Create window
+
+    MyInit();                                            // Initialize OpenGL
+    glutDisplayFunc(Draw);                               // Register display callback
+    glutIdleFunc(Spin);                                  // Register idle callback
+
+    // Create menu for selecting rotation axis
+    glutCreateMenu(menu);
+    glutAddMenuEntry("Rotate about X-axis", 1);
+    glutAddMenuEntry("Rotate about Y-axis", 2);
+    glutAddMenuEntry("Rotate about Z-axis", 3);
+    glutAttachMenu(GLUT_RIGHT_BUTTON);                  // Attach menu to right mouse button
+
+    glutMainLoop();                                      // Enter event loop
+    return 0;
+}

@@ -1,0 +1,67 @@
+#include <GL/glut.h>
+
+// Initialize the projection
+void myInit() {
+    glClearColor(1.0, 1.0, 1.0, 1.0); // Set white background
+    glMatrixMode(GL_PROJECTION);
+    gluOrtho2D(0, 640, 0, 480);       // Define 2D orthographic projection
+}
+
+// Boundary Fill Algorithm
+void boundaryFill(int x, int y, float *fill_color, float *boundary_color) {
+    float current[3]; 
+    glReadPixels(x, y, 1, 1, GL_RGB, GL_FLOAT, current); // Read the current pixel color
+    
+    if ((current[0] != boundary_color[0] || current[1] != boundary_color[1] || current[2] != boundary_color[2]) && 
+        (current[0] != fill_color[0] || current[1] != fill_color[1] || current[2] != fill_color[2])) {
+        
+        // Set fill color
+        glColor3f(fill_color[0], fill_color[1], fill_color[2]);
+        glBegin(GL_POINTS);
+        glVertex2i(x, y);
+        glEnd();
+        glFlush();
+
+        // Recursively call for 4-connected pixels
+        boundaryFill(x + 1, y, fill_color, boundary_color);
+        boundaryFill(x - 1, y, fill_color, boundary_color);
+        boundaryFill(x, y + 1, fill_color, boundary_color);
+        boundaryFill(x, y - 1, fill_color, boundary_color);
+    }
+}
+
+// Draw the polygon and apply boundary fill
+void polygonShape() {
+    glClear(GL_COLOR_BUFFER_BIT); // Clear the screen
+
+    // Draw the polygon (triangle)
+    glColor3f(1, 0, 0);           // Set boundary color (red)
+    glBegin(GL_LINE_LOOP);
+        glVertex2i(100, 100);
+        glVertex2i(100, 200);
+        glVertex2i(300, 100);
+    glEnd();
+    glFlush();
+
+    // Define boundary and fill colors
+    float boundary_color[3] = {1.0f, 0.0f, 0.0f}; // Red boundary color
+    float fill_color[3] = {0.0f, 0.0f, 1.0f};     // Blue fill color
+
+    // Start filling from a point inside the polygon
+    boundaryFill(150, 150, fill_color, boundary_color);
+}
+
+// Main function
+int main(int argc, char **argv) {
+    glutInit(&argc, argv);
+    glutInitWindowSize(640, 480);                  // Set window size
+    glutInitWindowPosition(100, 100);              // Set window position
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);   // Single buffer, RGB mode
+    glutCreateWindow("Boundary Fill Example");     // Create window
+
+    myInit();                                      // Initialize projection
+    glutDisplayFunc(polygonShape);                 // Register display callback
+
+    glutMainLoop();                                // Enter event loop
+    return 0;
+}
